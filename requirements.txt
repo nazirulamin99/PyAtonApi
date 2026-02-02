@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pandas
+numpy
+duckdb
+ollama
+python-dateutil
+clickhouse-connect
+streamlit
+pydantic
