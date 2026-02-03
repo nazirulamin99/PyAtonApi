@@ -106,8 +106,22 @@ def atonvolt_mmsi(mmsi: str, request: Request):
         referer = request.headers.get("referer", "")
 
         if "docs" in referer.lower():
-            return JSONResponse(content=result[:10])
-        
+            return JSONResponse(
+                content={
+                    "title": f"AtoN Voltage Data for MMSI {mmsi}",
+                    "count": len(result),
+                    "data": result[:10]
+                }
+            )
+
+        return JSONResponse(
+            content={
+                "title": f"AtoN Voltage Data for MMSI {mmsi}",
+                "count": len(result),
+                "data": result
+            }
+        )
+
 
 @app.get("/atonheartbeat_mmsi/{mmsi}", tags=["📦 Core Endpoints"])
 def atonheartbeat_mmsi(mmsi: str, request: Request):
@@ -118,18 +132,71 @@ def atonheartbeat_mmsi(mmsi: str, request: Request):
         referer = request.headers.get("referer", "")
 
         if "docs" in referer.lower():
-            return JSONResponse(content=result[:10])
-        
+            return JSONResponse(
+                content={
+                    "title": f"AtoN Heartbeat Data for MMSI {mmsi}",
+                    "count": len(result),
+                    "data": result[:10]
+                }
+            )
+
+        return JSONResponse(
+            content={
+                "title": f"AtoN Heartbeat Data for MMSI {mmsi}",
+                "count": len(result),
+                "data": result
+            }
+        )
+
+
 @app.get("/aton_by_month/{month}", tags=["📦 Core Endpoints"])
 def aton_by_month(month: str, request: Request):
     if month == '{month}':
-        raise HTTPException(status_code=400, detail="Invalid format")
-    else:
+        raise HTTPException(status_code=400, detail="Invalid format. Use YYYY-MM format (e.g., 2025-10)")
+
+    try:
         result = getAtonByMonth(month)
+
+        if not result:
+            raise HTTPException(status_code=404, detail=f"No data found for month: {month}")
+
+        # Clean data for JSON serialization (handle NaN, Infinity, Decimal)
+        def clean_value(v):
+            if v is None:
+                return None
+            if isinstance(v, float):
+                if np.isnan(v) or np.isinf(v):
+                    return None
+            return v
+
+        cleaned_result = [
+            {k: clean_value(v) for k, v in row.items()}
+            for row in result
+        ]
+
         referer = request.headers.get("referer", "")
-        
+
+        # Limit to 10 rows for Swagger docs UI
         if "docs" in referer.lower():
-            return JSONResponse(content=result[:10])
+            return JSONResponse(
+                content={
+                    "title": f"AtoN Data for {month}",
+                    "count": len(cleaned_result),
+                    "data": cleaned_result[:10]
+                }
+            )
+
+        return JSONResponse(content={
+            "title": f"AtoN Data for {month}",
+            "count": len(cleaned_result),
+            "data": cleaned_result
+        })
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error fetching AtoN data for month {month}")
+        raise HTTPException(status_code=500, detail=f"Error fetching data: {str(e)}")
         
 
 
