@@ -20,6 +20,7 @@ A FastAPI application for maritime AtoN (Aids to Navigation) data analytics with
 ## Prerequisites
 
 - Docker & Docker Compose
+- [Ollama](https://ollama.ai/download) installed natively (for GPU acceleration)
 
 ## Quick Start
 
@@ -29,19 +30,25 @@ A FastAPI application for maritime AtoN (Aids to Navigation) data analytics with
 cd PyAtonAPI
 ```
 
-### 2. Start the services
+### 2. Start Ollama and pull the model
+
+```bash
+ollama serve
+```
+
+In a new terminal:
+
+```bash
+ollama pull llama3
+```
+
+### 3. Start the API
 
 ```bash
 docker-compose up -d
 ```
 
-### 3. Pull the llama3 model (first time only)
-
-```bash
-docker-compose exec ollama ollama pull llama3
-```
-
-### 4. Verify services are running
+### 4. Verify the API is running
 
 ```bash
 docker-compose ps
@@ -67,10 +74,10 @@ docker-compose ps
 ## Docker Commands
 
 ```bash
-# Start services
+# Start the API
 docker-compose up -d
 
-# Stop services
+# Stop the API
 docker-compose down
 
 # Rebuild after code changes
@@ -78,12 +85,22 @@ docker-compose up -d --build
 
 # View API logs
 docker-compose logs -f api
+```
 
-# View Ollama logs
-docker-compose logs -f ollama
+## Ollama Commands
 
-# Check loaded models
-docker-compose exec ollama ollama list
+```bash
+# Start Ollama (run in background)
+ollama serve
+
+# Pull a model
+ollama pull llama3
+
+# List installed models
+ollama list
+
+# Remove a model
+ollama rm llama3
 ```
 
 ## Local Development (without Docker)
@@ -124,7 +141,7 @@ PyAtonAPI/
 ├── llm_search.py       # LLM query generation
 ├── requirements.txt    # Python dependencies
 ├── Dockerfile          # Docker image definition
-├── docker-compose.yml  # Multi-container setup
+├── docker-compose.yml  # API container setup
 └── README.md
 ```
 
