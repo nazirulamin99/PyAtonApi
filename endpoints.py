@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+from typing import Optional, List, Any, Dict
 import pandas as pd
 import logging
 import json
@@ -12,6 +14,161 @@ from dateutil.relativedelta import relativedelta
 
 from llm_search import nlp_llm_summary, nlp_llm_analytics
 from data_loader import get_all_aton, getATON_summary, getAtonVoltByMMSI, getAtonHeartbeatByMMSI, getAtonByMonth
+
+
+# -------------------------------------------
+# Response Schemas
+# -------------------------------------------
+
+class AtonAllItem(BaseModel):
+    ts: Optional[str] = None
+    mmsi: Optional[str] = None
+    name: Optional[str] = None
+    region: Optional[str] = None
+    aton_type: Optional[str] = None
+    minBattAton: Optional[float] = None
+    longitude: Optional[float] = None
+    latitude: Optional[float] = None
+    lastseen: Optional[str] = None
+    health_OKNG: Optional[int] = None
+    aton_no: Optional[str] = None
+    condition: Optional[str] = None
+    color: Optional[List[int]] = None
+    volt_aton: Optional[float] = None
+
+class AtonAllResponse(BaseModel):
+    title: str
+    count: int
+    data: List[AtonAllItem]
+
+
+class AtonSummaryItem(BaseModel):
+    ts: Optional[str] = None
+    mmsi: Optional[str] = None
+    name: Optional[str] = None
+    region: Optional[str] = None
+    aton_type: Optional[str] = None
+    opt6_second: Optional[float] = None
+    opt6_percent: Optional[float] = None
+    opt21_second: Optional[float] = None
+    opt21_percent: Optional[float] = None
+    minTemp: Optional[float] = None
+    maxTemp: Optional[float] = None
+    meanTemp: Optional[float] = None
+    last_Temp: Optional[float] = None
+    minBattAton: Optional[float] = None
+    maxBattAton: Optional[float] = None
+    meanBattAton: Optional[float] = None
+    last_BattAton: Optional[float] = None
+    minBattLant: Optional[float] = None
+    maxBattLant: Optional[float] = None
+    meanBattLant: Optional[float] = None
+    last_BattLant: Optional[float] = None
+    off_pos_OKNG: Optional[int] = None
+    last_off_pos: Optional[int] = None
+    LDR_OKNG: Optional[int] = None
+    last_LDR: Optional[int] = None
+    light_OKNG: Optional[int] = None
+    last_light: Optional[int] = None
+    racon_OKNG: Optional[int] = None
+    last_racon: Optional[int] = None
+    health_OKNG: Optional[int] = None
+    last_health: Optional[int] = None
+    cnt_msg6: Optional[int] = None
+    cnt_msg21: Optional[int] = None
+    longitude: Optional[float] = None
+    latitude: Optional[float] = None
+    lastseen: Optional[str] = None
+
+class AtonSummaryResponse(BaseModel):
+    title: str
+    count: int
+    data: List[AtonSummaryItem]
+
+
+class AtonVoltItem(BaseModel):
+    ts: Optional[str] = None
+    volt_int: Optional[float] = None
+    volt_ex1: Optional[float] = None
+    aton_name: Optional[str] = None
+    mmsi: Optional[str] = None
+
+class AtonVoltResponse(BaseModel):
+    title: str
+    count: int
+    data: List[AtonVoltItem]
+
+
+class AtonHeartbeatItem(BaseModel):
+    ts: Optional[str] = None
+    beat: Optional[int] = None
+    Aton_name: Optional[str] = Field(None, alias="Aton name")
+    mmsi: Optional[str] = None
+
+class AtonHeartbeatResponse(BaseModel):
+    title: str
+    count: int
+    data: List[AtonHeartbeatItem]
+
+
+class AtonByMonthItem(BaseModel):
+    month: Optional[str] = None
+    mmsi: Optional[str] = None
+    name: Optional[str] = None
+    region: Optional[str] = None
+    aton_type: Optional[str] = None
+    opt6_second: Optional[float] = None
+    opt6_percent: Optional[float] = None
+    opt21_second: Optional[float] = None
+    opt21_percent: Optional[float] = None
+    minTemp: Optional[float] = None
+    maxTemp: Optional[float] = None
+    meanTemp: Optional[float] = None
+    last_Temp: Optional[float] = None
+    minBattAton: Optional[float] = None
+    maxBattAton: Optional[float] = None
+    meanBattAton: Optional[float] = None
+    last_BattAton: Optional[float] = None
+    minBattLant: Optional[float] = None
+    maxBattLant: Optional[float] = None
+    meanBattLant: Optional[float] = None
+    last_BattLant: Optional[float] = None
+    off_pos_OKNG: Optional[int] = None
+    last_off_pos: Optional[int] = None
+    LDR_OKNG: Optional[int] = None
+    last_LDR: Optional[int] = None
+    light_OKNG: Optional[int] = None
+    last_light: Optional[int] = None
+    racon_OKNG: Optional[int] = None
+    last_racon: Optional[int] = None
+    health_OKNG: Optional[int] = None
+    last_health: Optional[int] = None
+    cnt_msg6: Optional[int] = None
+    cnt_msg21: Optional[int] = None
+    longitude: Optional[float] = None
+    latitude: Optional[float] = None
+    lastseen: Optional[str] = None
+
+class AtonByMonthResponse(BaseModel):
+    title: str
+    count: int
+    data: List[AtonByMonthItem]
+
+
+class LLMInteractiveResponse(BaseModel):
+    success: bool
+    title: Optional[str] = None
+    sql: Optional[str] = None
+    rows: Optional[List[Dict[str, Any]]] = None
+    analysis: Optional[str] = None
+    error: Optional[str] = None
+
+class LLMQueryAnalyticsResponse(BaseModel):
+    success: bool
+    title: Optional[str] = None
+    sql: Optional[str] = None
+    rows: Optional[List[Dict[str, Any]]] = None
+    count: Optional[int] = None
 
 
 def fix_month_range_in_sql(sql: str) -> str:
@@ -55,7 +212,7 @@ logger = logging.getLogger(__name__)
 # -------------------------------------------
 # API Endpoint
 # -------------------------------------------
-@app.get("/aton/all", summary="Get all AtoN data", tags=["📦 Core Endpoints"])
+@app.get("/aton/all", summary="Get all AtoN data", tags=["📦 Core Endpoints"], response_model=AtonAllResponse)
 async def get_all_aton_api():
     df = get_all_aton()
     if df is None or df.empty:
@@ -76,7 +233,7 @@ async def get_all_aton_api():
     )
 
 
-@app.get("/aton/summary", summary="Get AtoN summary by MMSI or Date", tags=["📦 Core Endpoints"])
+@app.get("/aton/summary", summary="Get AtoN summary by MMSI or Date", tags=["📦 Core Endpoints"], response_model=AtonSummaryResponse)
 async def aton_summary(
     mmsi: str = Query(None, description="MMSI number of the AtoN"),
     date: str = Query(None, description="Date (YYYY-MM-DD) to filter data")
@@ -97,7 +254,7 @@ async def aton_summary(
         }
     )
 
-@app.get("/atonvolt_mmsi/{mmsi}", tags=["📦 Core Endpoints"])
+@app.get("/atonvolt_mmsi/{mmsi}", tags=["📦 Core Endpoints"], response_model=AtonVoltResponse)
 def atonvolt_mmsi(mmsi: str, request: Request):
     if mmsi == '{mmsi}':
         return HTTPException(status_code=400, detail="Invalid format")
@@ -123,7 +280,7 @@ def atonvolt_mmsi(mmsi: str, request: Request):
         )
 
 
-@app.get("/atonheartbeat_mmsi/{mmsi}", tags=["📦 Core Endpoints"])
+@app.get("/atonheartbeat_mmsi/{mmsi}", tags=["📦 Core Endpoints"], response_model=AtonHeartbeatResponse)
 def atonheartbeat_mmsi(mmsi: str, request: Request):
     if mmsi == '{mmsi}':
         return HTTPException(status_code=400, detail="Invalid format")
@@ -149,7 +306,7 @@ def atonheartbeat_mmsi(mmsi: str, request: Request):
         )
 
 
-@app.get("/aton_by_month/{month}", tags=["📦 Core Endpoints"])
+@app.get("/aton_by_month/{month}", tags=["📦 Core Endpoints"], response_model=AtonByMonthResponse)
 def aton_by_month(month: str, request: Request):
     if month == '{month}':
         raise HTTPException(status_code=400, detail="Invalid format. Use YYYY-MM format (e.g., 2025-10)")
@@ -235,7 +392,7 @@ def convert_clickhouse_to_duckdb(sql: str) -> str:
     return sql
 
 
-@app.get("/llm_interactive", tags=["👨‍💻 LLM"])
+@app.get("/llm_interactive", tags=["👨‍💻 LLM"], response_model=LLMInteractiveResponse)
 def llm_summary(request: Request, query: str = ""):
     """Execute LLM SQL → ClickHouse → DuckDB → AI analysis → Convert ts to MYT."""
 
@@ -401,7 +558,7 @@ def llm_summary(request: Request, query: str = ""):
         return {"success": False, "error": str(e), "sql": sql if 'sql' in locals() else None}
 
 
-@app.get("/llm_query_analytics", tags=["👨‍💻 LLM"])
+@app.get("/llm_query_analytics", tags=["👨‍💻 LLM"], response_model=LLMQueryAnalyticsResponse)
 def llm_query_analytics_local(
     request: Request,
     user_query: str = Query(..., description="Natural language query for AtoN Analytics (real-time data)")
@@ -505,7 +662,6 @@ def llm_query_analytics_local(
         raise HTTPException(status_code=500, detail=str(e))
 
 # 1️⃣ Create a request model for POST
-from pydantic import BaseModel
 class LLMQueryRequest(BaseModel):
     query: str = ""
 
